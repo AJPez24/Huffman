@@ -1,0 +1,6 @@
+Known issues: 
+- need to specify file extension when making the final decoded file
+- Table doesn't update when decode button is clicked
+- Doens't allow the encoding of a file with only 1 character.
+
+All of these issues I plan on fixing in the near future (hopedully before you see this), I just want to turn something in before the due date. Just ran out of time here, completely on me.
