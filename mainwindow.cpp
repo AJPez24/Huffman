@@ -57,14 +57,25 @@ MainWindow::~MainWindow() {}
 
 
 void MainWindow::loadButtonClicked(){
-    loadFileName = QFileDialog::getOpenFileName();
+
+    QString loadFileName = QFileDialog::getOpenFileName();
     QFile file(loadFileName);
+
     if(!file.open(QIODevice::ReadOnly)){
         QMessageBox::information(this, "Error", QString("Can't open file \"%1\"").arg(loadFileName));
         return;
     }
-
     else{
+        table->clear();
+
+        for (int i = 0; i < 256; ++i){
+            table->setRowHidden(i, true);
+        }
+
+        for (int i = 0; i < frequencies.length(); ++i){
+            frequencies[i] = 0;
+        }
+
         fileSize = file.size();
         fileContents = file.readAll();
 
@@ -297,12 +308,22 @@ void MainWindow::decodeButtonClicked(){
         int decodePointer = 0;
         QString temp;
 
+        for (int i = 0; i < frequencies.length(); ++i){
+            frequencies[i] = 0;
+        }
+
+        for (int i = 0; i < 256; ++i){
+            table->setRowHidden(i, true);
+        }
+
+
         while (i <= toDecode.length()){
             temp = toDecode.mid(decodePointer, i - decodePointer);
             if (getKey.contains(temp)){
                 decodePointer += temp.length();
                 i = decodePointer + 1;
                 decodeOut << (char) getKey.indexOf(temp);
+                ++frequencies[(unsigned char) getKey.indexOf(temp)];
                 temp = "";
             }
             else{
@@ -310,6 +331,25 @@ void MainWindow::decodeButtonClicked(){
             }
         }
 
+        for (int i = 0; i < 256; ++i){
+            QTableWidgetItem *item = new QTableWidgetItem;
+            item->setData(Qt::DisplayRole, i);
+            table->setItem(i, 0, item);
+        }
+
+        for (int i = 0; i < 256; ++i){
+            QTableWidgetItem *item = new QTableWidgetItem(QChar(i));
+            table->setItem(i, 1, item);
+        }
+
+        for (int i = 0; i < 256; ++i){
+            QTableWidgetItem *item = new QTableWidgetItem;
+            item->setData(Qt::DisplayRole, frequencies[i]);
+            table->setItem(i, 2, item);
+            if (frequencies[i]){
+                table->setRowHidden(i, false);
+            }
+        }
 
     }
 }

@@ -15,7 +15,6 @@ class MainWindow : public QMainWindow
     QPushButton *decodeButton;
     QTableWidget *table;
 
-    QString loadFileName;
     QString decodeFileName;
 
 
