@@ -60,6 +60,8 @@ void MainWindow::loadButtonClicked(){
 
     QString loadFileName = QFileDialog::getOpenFileName();
     QFile file(loadFileName);
+    QFileInfo fileInfo(loadFileName);
+    fileExtention = fileInfo.completeSuffix();
 
     if(!file.open(QIODevice::ReadOnly)){
         QMessageBox::information(this, "Error", QString("Can't open file \"%1\"").arg(loadFileName));
@@ -130,64 +132,66 @@ void MainWindow::encodeButtonClicked(){
         }
     }
 
-    if (toDo.size() == 1){
-        QMessageBox::information(this, "Error", QString("File can't be encoded because it only contains 1 character"));
-        return;
-    }
-
-    QMap<QByteArray, QPair<QByteArray, QByteArray> > parentChildren;
-    while (toDo.size() > 1) {
-        int freq0 = toDo.begin().key();
-        QByteArray chars0 = toDo.begin().value();
-        toDo.erase(toDo.begin());
-
-        int freq1 = toDo.begin().key();
-        QByteArray chars1 = toDo.begin().value();
-        toDo.erase(toDo.begin());
-
-        int parentFreq = freq0 + freq1;
-        QByteArray parentChars = chars0 + chars1;
-        toDo.insert(parentFreq, parentChars);
-
-        parentChildren[parentChars] = qMakePair(chars0, chars1);
-    }
-
-
-    QByteArray huffmanRoot = toDo.begin().value();
-
-
 
     QVector<QString> charCodeEncodingStrings(256, "");
 
+    if (toDo.size() == 1){
+        charCodeEncodingStrings[(unsigned char) fileContents[0]] = "0";
+    }
+    else{
 
+        QMap<QByteArray, QPair<QByteArray, QByteArray> > parentChildren;
+        while (toDo.size() > 1) {
+            int freq0 = toDo.begin().key();
+            QByteArray chars0 = toDo.begin().value();
+            toDo.erase(toDo.begin());
 
-    for (int i = 0; i < 256; ++i){
-        if (frequencies[i]){
-            QByteArray root = huffmanRoot;
-            QString code = "";
-            QByteArray target;
-            target.append((unsigned char) i);
+            int freq1 = toDo.begin().key();
+            QByteArray chars1 = toDo.begin().value();
+            toDo.erase(toDo.begin());
 
-            if (root == target){
-                charCodeEncodingStrings[i] = code;
-            }
-            else{
-                while (root != target){
-                    if(parentChildren[root].first.contains(target)){
-                        code.append('0');
-                        root = parentChildren[root].first;
-                    }
-                    else if (parentChildren[root].second.contains(target)){
-                        code.append('1');
-                        root = parentChildren[root].second;
-                    }
-                }
-                charCodeEncodingStrings[i] = code;
-            }
+            int parentFreq = freq0 + freq1;
+            QByteArray parentChars = chars0 + chars1;
+            toDo.insert(parentFreq, parentChars);
+
+            parentChildren[parentChars] = qMakePair(chars0, chars1);
         }
 
-        else charCodeEncodingStrings[i] = "";
+
+        QByteArray huffmanRoot = toDo.begin().value();
+
+
+        for (int i = 0; i < 256; ++i){
+            if (frequencies[i]){
+                QByteArray root = huffmanRoot;
+                QString code = "";
+                QByteArray target;
+                target.append((unsigned char) i);
+
+                if (root == target){
+                    charCodeEncodingStrings[i] = code;
+                }
+                else{
+                    while (root != target){
+                        if(parentChildren[root].first.contains(target)){
+                            code.append('0');
+                            root = parentChildren[root].first;
+                        }
+                        else if (parentChildren[root].second.contains(target)){
+                            code.append('1');
+                            root = parentChildren[root].second;
+                        }
+                    }
+                    charCodeEncodingStrings[i] = code;
+                }
+            }
+
+            else charCodeEncodingStrings[i] = "";
+        }
     }
+
+
+
 
 
     //Add Items to table
@@ -241,7 +245,7 @@ void MainWindow::encodeButtonClicked(){
 
     QDataStream out (&outFile);
 
-    out << charCodeEncodingStrings << bitsToDecode;
+    out << charCodeEncodingStrings << bitsToDecode << fileExtention;
 
     out.writeRawData(encodedInts.data(), encodedInts.length());
 
@@ -257,6 +261,7 @@ void MainWindow::decodeButtonClicked(){
     decodeFileName = QFileDialog::getOpenFileName();
     QFile inFile(decodeFileName);
 
+
     if(!inFile.open(QIODevice::ReadOnly)){
         QMessageBox::information(this, "Error", QString("Can't open file \"%1\"").arg(decodeFileName));
         return;
@@ -268,9 +273,11 @@ void MainWindow::decodeButtonClicked(){
 
         int decodeLength;
 
+        QString decodedExtension;
+
         QDataStream in (&inFile);
 
-        in >> getKey >> decodeLength;
+        in >> getKey >> decodeLength >> decodedExtension;
 
 
         QByteArray huffmanIn(((decodeLength + 7) / 8), '0');
@@ -292,9 +299,14 @@ void MainWindow::decodeButtonClicked(){
 
 
 
+
         QString decodedFileName = QFileDialog::getSaveFileName(this, "Save");
 
+        decodedFileName = decodedFileName + "." + decodedExtension;
+
+
         QFile decodedFile(decodedFileName);
+
 
         if (!decodedFile.open(QIODevice::WriteOnly | QIODevice::Truncate)){
             QMessageBox::information(this, "Error", QString("Can't write to file \"%1\"").arg(decodedFileName));

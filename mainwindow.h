@@ -17,6 +17,8 @@ class MainWindow : public QMainWindow
 
     QString decodeFileName;
 
+    QString fileExtention;
+
 
 
     QByteArray fileContents;
